@@ -23,4 +23,7 @@ The application provides a full suite of task management capabilities:
 * **Console UI:** [Rich](https://rich.readthedocs.io/)
 * **Development Tools:** Claude Code, Spec-Kit Plus
 
+----
 
+```
+uv run python -m src.cli.main
