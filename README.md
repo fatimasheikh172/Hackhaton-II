@@ -46,10 +46,14 @@ The application provides a full suite of task management capabilities:
 
 ## Clone the Repository:
 ```
+bash
+
 git clone [https://github.com/fatimasheikh172/Hackhaton-II.git](https://github.com/fatimasheikh172/Hackhaton-II.git)
 cd Hackhaton-II
 Install Dependencies:
 ```
 ```
+bash
+
 uv sync
 ```
