@@ -23,37 +23,4 @@ The application provides a full suite of task management capabilities:
 * **Console UI:** [Rich](https://rich.readthedocs.io/)
 * **Development Tools:** Claude Code, Spec-Kit Plus
 
----
 
-## 📂 Project Structure
-
-```text
-├── specs/               # Spec-Kit Plus workflow history
-│   ├── sp.specify       # Functional requirements
-│   ├── sp.plan          # Development roadmap
-│   └── sp.task          # Implementation steps
-├── src/                 # Source code
-│   ├── models/          # Task data structures
-│   ├── repositories/    # In-memory data handling
-│   ├── services/        # Task logic & operations
-│   └── main.py          # CLI entry point
-├── CLAUDE.md            # AI project constitution
-├── pyproject.toml       # UV configuration & dependencies
-└── README.md            # Project documentation
-
-## Installation & Setup
-# Ensure you have the UV package manager installed.
-
-## Clone the Repository:
-```
-bash
-
-git clone [https://github.com/fatimasheikh172/Hackhaton-II.git](https://github.com/fatimasheikh172/Hackhaton-II.git)
-cd Hackhaton-II
-Install Dependencies:
-```
-```
-bash
-
-uv sync
-```
