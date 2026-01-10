@@ -58,10 +58,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onUpdate }) => {
     try {
       const updatedData: Task = {
         ...task,
-        title: editForm.title,
-        description: editForm.description,
-        status: editForm.status,
-        priority: editForm.priority,
+        ...editForm,
         due_date: editForm.due_date ? new Date(editForm.due_date).toISOString() : null,
       };
 
@@ -71,19 +68,6 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onUpdate }) => {
     } catch (error) {
       console.error('Error updating task details:', error);
     }
-  };
-
-  // Color mappings
-  const priorityColors: Record<string, string> = {
-    low: 'bg-green-100 text-green-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    high: 'bg-red-100 text-red-800',
-  };
-
-  const statusColors: Record<string, string> = {
-    pending: 'bg-gray-100 text-gray-800',
-    'in-progress': 'bg-blue-100 text-blue-800',
-    completed: 'bg-green-100 text-green-800',
   };
 
   return (
@@ -96,20 +80,23 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onUpdate }) => {
             type="text"
             value={editForm.title}
             onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-            className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            // Added text-black here
+            className="w-full px-3 py-2 bg-white text-black border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             required
           />
           <textarea
             value={editForm.description}
             onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-            className="w-full px-3 py-2 bg-white bg-white border border-gray-200 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            // Added text-black here
+            className="w-full px-3 py-2 bg-white text-black border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             placeholder="Description (optional)"
           />
           <div className="flex flex-wrap gap-2">
             <select
               value={editForm.status}
               onChange={(e) => setEditForm({ ...editForm, status: e.target.value as any })}
-              className="px-3 py-2 bg-white bg-white border border-gray-200 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              // Added text-black here
+              className="px-3 py-2 bg-white text-black border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="pending">Pending</option>
               <option value="in-progress">In Progress</option>
@@ -118,7 +105,8 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onUpdate }) => {
             <select
               value={editForm.priority}
               onChange={(e) => setEditForm({ ...editForm, priority: e.target.value as any })}
-              className="px-3 py-2 bg-white bg-white border border-gray-200 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              // Added text-black here
+              className="px-3 py-2 bg-white text-black border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             >
               <option value="low">Low</option>
               <option value="medium">Medium</option>
@@ -128,14 +116,15 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onUpdate }) => {
               type="date"
               value={editForm.due_date}
               onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
-              className="px-3 py-2 bg-white bg-white border border-gray-200 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              // Added text-black here
+              className="px-3 py-2 bg-white text-black border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
             />
           </div>
           <div className="flex justify-end space-x-2 pt-2">
             <button
               type="button"
               onClick={() => setIsEditing(false)}
-              className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-gray-700 text-gray-700 bg-gray-100 bg-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="flex items-center space-x-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
             >
               <X className="h-4 w-4" />
               <span>Cancel</span>
@@ -158,24 +147,26 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onUpdate }) => {
                 className={`mt-0.5 flex-shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
                   task.status === 'completed'
                     ? 'bg-emerald-500 border-emerald-500 text-white scale-110'
-                    : 'border-gray-300 border-gray-200 hover:border-[#6366f1]'
+                    : 'border-gray-300 hover:border-[#6366f1]'
                 }`}
               >
                 {task.status === 'completed' && <Check className="h-3.5 w-3.5" />}
               </button>
               <div className="flex-1 min-w-0">
+                {/* Fixed Title Text Color: text-black */}
                 <h3 className={`font-medium truncate transition-all duration-300 ${
                   task.status === 'completed'
                     ? 'line-through dark:text-emerald-500 text-emerald-500'
-                    : 'text-gray-900 text-gray-900'
+                    : 'text-black dark:text-white'
                 }`}>
                   {task.title}
                 </h3>
                 {task.description && (
+                  /* Fixed Description Text Color: text-gray-800 */
                   <p className={`text-sm mt-1 truncate transition-all duration-300 ${
                     task.status === 'completed'
                       ? 'line-through text-gray-500 dark:text-emerald-400'
-                      : 'text-gray-600 text-gray-500'
+                      : 'text-gray-800 dark:text-gray-300'
                   }`}>
                     {task.description}
                   </p>
@@ -183,24 +174,24 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onUpdate }) => {
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   <span className={`text-xs px-2 py-1 rounded-full transition-all duration-300 ${
                     task.priority === 'low'
-                      ? 'bg-green-100/80 text-green-800 border border-green-200/50 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700/50'
+                      ? 'bg-green-100 text-green-800 border border-green-200'
                       : task.priority === 'medium'
-                      ? 'bg-amber-100/80 text-amber-800 border border-amber-200/50 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700/50'
-                      : 'bg-red-100/80 text-red-800 border border-red-200/50 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700/50'
+                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                      : 'bg-red-100 text-red-800 border border-red-200'
                   }`}>
                     {task.priority}
                   </span>
                   <span className={`text-xs px-2 py-1 rounded-full transition-all duration-300 ${
                     task.status === 'pending'
-                      ? 'bg-gray-100 text-gray-800 border border-gray-200 bg-white text-gray-700 border-gray-200'
+                      ? 'bg-gray-100 text-gray-800 border border-gray-200'
                       : task.status === 'in-progress'
-                      ? 'bg-blue-100/80 text-blue-800 border border-blue-200/50 dark:bg-blue-900/30 dark:text-cyan-400 dark:border-blue-700/50'
-                      : 'bg-emerald-100/80 text-emerald-800 border border-emerald-200/50 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700/50'
+                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                      : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                   }`}>
                     {task.status.replace('-', ' ')}
                   </span>
                   {task.due_date && (
-                    <div className="flex items-center text-xs text-gray-500 text-gray-500">
+                    <div className="flex items-center text-xs text-gray-600">
                       <Calendar className="h-3 w-3 mr-1" />
                       {new Date(task.due_date).toLocaleDateString()}
                     </div>
@@ -213,7 +204,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onUpdate }) => {
           <div className="flex space-x-1 ml-2">
             <button
               onClick={() => setIsEditing(true)}
-              className="p-1.5 text-gray-600 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="p-1.5 text-gray-600 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
               title="Edit task"
             >
               <Edit3 className="h-4 w-4" />
@@ -224,7 +215,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, onUpdate }) => {
               className={`p-1.5 rounded-lg transition-colors ${
                 isDeleting
                   ? 'text-gray-400 cursor-not-allowed'
-                  : 'text-gray-600 text-gray-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  : 'text-gray-600 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
               title="Delete task"
             >

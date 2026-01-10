@@ -3,371 +3,185 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
 import ProtectedRoute from '../components/ProtectedRoute';
-import Layout from '../components/Layout';
 import TaskList from '../components/TaskList';
 import TaskForm from '../components/TaskForm';
 import { Task } from '../types/task';
 import { getTasks } from '../lib/api-client';
-import { Inbox, Calendar, Archive, Filter, Plus, CheckCircle, Clock, Menu, X, LogOut, User, Sun, Moon, TrendingUp } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Inbox, Calendar, Archive, Filter, Plus, Menu, X, LogOut, User, Search, Hash } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const TasksPage = () => {
   const router = useRouter();
   const { state, logout } = useAuth();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'inbox' | 'today' | 'completed'>('inbox');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Load tasks on component mount
   useEffect(() => {
     const fetchTasks = async () => {
       try {
         const data = await getTasks();
         setTasks(data.tasks);
-        setLoading(false);
       } catch (err) {
         console.error('Failed to load tasks:', err);
+      } finally {
         setLoading(false);
       }
     };
-
     fetchTasks();
   }, []);
 
-  const handleTaskCreated = (newTask: Task) => {
-    setTasks(prev => [newTask, ...prev]);
-  };
+  const handleTaskCreated = (newTask: Task) => setTasks(prev => [newTask, ...prev]);
+  const handleTasksUpdate = (updatedTasks: Task[]) => setTasks(updatedTasks);
+  const handleLogout = () => { logout(); router.push('/'); };
 
-  const handleTasksUpdate = (updatedTasks: Task[]) => {
-    setTasks(updatedTasks);
-  };
-
-  // Calculate progress
   const completedTasks = tasks.filter(task => task.status === 'completed').length;
   const totalTasks = tasks.length;
   const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-  // State for sidebar navigation
-  const [activeTab, setActiveTab] = useState<'inbox' | 'today' | 'completed'>('inbox');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Filter tasks based on active tab and status filter
   const filteredTasks = tasks.filter(task => {
-    const today = new Date();
-    const taskDate = new Date(task.created_at || task.updated_at || Date.now());
-
-    // First apply the active tab filter
-    let tabFilter = true;
-    switch(activeTab) {
-      case 'inbox':
-        tabFilter = true; // Show all tasks
-        break;
-      case 'today':
-        tabFilter = taskDate.toDateString() === today.toDateString();
-        break;
-      case 'completed':
-        tabFilter = task.status === 'completed';
-        break;
-      default:
-        tabFilter = true;
-    }
-
-    // Then apply the status filter
-    let statusFilterApplied = true;
-    switch(statusFilter) {
-      case 'pending':
-        statusFilterApplied = task.status === 'pending';
-        break;
-      case 'completed':
-        statusFilterApplied = task.status === 'completed';
-        break;
-      case 'all':
-        statusFilterApplied = true;
-        break;
-    }
-
-    return tabFilter && statusFilterApplied;
+    const today = new Date().toDateString();
+    const taskDate = new Date(task.due_date || Date.now()).toDateString();
+    if (activeTab === 'today') return taskDate === today;
+    if (activeTab === 'completed') return task.status === 'completed';
+    return true;
   });
-
-  const handleLogout = () => {
-    logout();
-    router.push('/');
-  };
-
-  // Navigation items for the sidebar
-  const navigationItems = [
-    { id: 'inbox', label: 'Inbox', icon: Inbox },
-    { id: 'today', label: 'Today', icon: Calendar },
-    { id: 'completed', label: 'Completed', icon: Archive },
-  ];
-
-  // Categories for the sidebar
-  const categories = [
-    { id: 'work', label: 'Work', count: 12 },
-    { id: 'personal', label: 'Personal', count: 8 },
-    { id: 'shopping', label: 'Shopping', count: 5 },
-  ];
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 bg-gray-50">
-        {/* Progress Tracking Line - Top of page */}
-        <div className="w-full h-1 bg-gray-200 bg-white">
-          <motion.div
-            className="h-full bg-[#6366f1]"
-            initial={{ width: '0%' }}
-            animate={{ width: `${progressPercentage}%` }}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
-          />
-        </div>
+      <div className="min-h-screen bg-[#F9FAFB] flex flex-col md:flex-row font-sans text-black">
+        <Head>
+          <title>Command Center | Productivity App</title>
+        </Head>
 
-        {/* Top/Right Header (User & Stats) - Third panel */}
-        <header className="bg-white border-b border-gray-200 bg-white border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16 items-center">
-              <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900 text-gray-900">Todo App</h1>
+        {/* --- SIDEBAR --- */}
+        <aside className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
+          <div className="h-full flex flex-col p-6">
+            <div className="flex items-center gap-3 mb-10 px-2">
+              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                <CheckCircleIcon className="text-white h-6 w-6" />
               </div>
-
-              {state.isAuthenticated && (
-                <div className="flex items-center space-x-4">
-                  {/* Command Palette Search Bar */}
-                  <div className="hidden md:flex items-center">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search tasks (CMD+K)"
-                        className="w-64 pl-10 pr-4 py-2 bg-white bg-white border border-gray-200 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 text-sm"
-                      />
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                      </div>
-                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                        <kbd className="text-xs text-gray-400 bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded">⌘K</kbd>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="relative">
-                    <button className="flex items-center space-x-2 bg-white bg-white px-3 py-1.5 rounded-lg border border-gray-200 border-gray-200 hover:border-[#6366f1]/50 transition-colors">
-                      <User className="h-4 w-4 text-gray-500 text-gray-500" />
-                      <span className="text-sm text-gray-700 text-gray-700">
-                        {state.user?.name || state.user?.email}
-                      </span>
-                    </button>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center space-x-1.5 px-4 py-2 text-sm font-medium text-white bg-[#6366f1] rounded-lg hover:bg-[#4f46e5] focus:outline-none focus:ring-2 ring-[#6366f1] transition-colors duration-200"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              )}
+              <span className="text-xl font-black tracking-tight">FocusFlow</span>
             </div>
-          </div>
-        </header>
 
-        <div className="flex">
-          {/* Left Sidebar (Navigation) - First panel */}
-          <aside
-            className={`fixed md:static z-40 h-[calc(100vh-4rem)] md:h-auto w-64 bg-white bg-white border border-gray-200 border-gray-200 transition-transform duration-300 rounded-2xl mx-4 mt-4 ${
-              sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            } md:block`}
-          >
-            <div className="p-6">
-              {/* Logo */}
-              <div className="mb-8">
-                <h1 className="text-xl font-bold text-gray-900 text-gray-900">Todo App</h1>
-              </div>
+            <nav className="flex-1 space-y-1">
+              <SidebarLink icon={Inbox} label="Inbox" active={activeTab === 'inbox'} onClick={() => setActiveTab('inbox')} count={totalTasks} />
+              <SidebarLink icon={Calendar} label="Today" active={activeTab === 'today'} onClick={() => setActiveTab('today')} />
+              <SidebarLink icon={Archive} label="Completed" active={activeTab === 'completed'} onClick={() => setActiveTab('completed')} />
+              
+              <div className="pt-8 pb-4 text-[11px] font-bold text-gray-400 uppercase tracking-widest px-4">Workspace</div>
+              <SidebarLink icon={Hash} label="Work" />
+              <SidebarLink icon={Hash} label="Personal" />
+            </nav>
 
-              {/* Navigation */}
-              <div className="mb-6">
-                <h2 className="text-sm font-medium text-gray-500 text-gray-500 mb-3 px-2">NAVIGATION</h2>
-                <div className="space-y-1">
-                  {navigationItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => setActiveTab(item.id as 'inbox' | 'today' | 'completed')}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
-                          activeTab === item.id
-                            ? 'bg-indigo-100/50 dark:bg-[#6366f1]/20 text-[#6366f1] dark:text-[#818cf8]'
-                            : 'text-gray-700 text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-[#6366f1]/50'
-                        }`}
-                      >
-                        <Icon className="h-5 w-5" />
-                        <span>{item.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Categories */}
-              <div className="mb-6">
-                <h2 className="text-sm font-medium text-gray-500 text-gray-500 mb-3 px-2">CATEGORIES</h2>
-                <div className="space-y-1">
-                  {categories.map((category) => (
-                    <button
-                      key={category.id}
-                      className="w-full flex items-center justify-between px-4 py-2 rounded-lg transition-colors hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 text-gray-700 hover:border-[#6366f1]/50"
-                    >
-                      <span>{category.label}</span>
-                      <span className="bg-gray-200 bg-white text-gray-700 text-gray-700 text-xs px-2 py-1 rounded-full">
-                        {category.count}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Logout button */}
-              <div className="mt-auto pt-6 border-t border-gray-200 border-gray-200">
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-all text-gray-700 text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 hover:border-[#6366f1]/50"
-                >
-                  <LogOut className="h-5 w-5" />
-                  <span>Logout</span>
-                </button>
-              </div>
-            </div>
-          </aside>
-
-          {/* Main Center Panel (Task Content) - Second panel */}
-          <main className="flex-1 p-4 md:p-6">
-            <div className="max-w-4xl mx-auto">
-              <Head>
-                <title>Command Center - Todo App</title>
-                <meta name="description" content="Professional grade task management dashboard" />
-              </Head>
-
-              {/* Welcome message and stats */}
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900 text-gray-900 mb-2">
-                  Welcome back, {state.user?.name || state.user?.email?.split('@')[0]}
-                </h1>
-                <div className="bg-white bg-white border border-gray-200 border-gray-200 rounded-2xl p-4 shadow-lg">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-600 text-gray-500">
-                      {completedTasks} of {totalTasks} tasks completed
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 bg-white rounded-full h-2.5">
-                    <div
-                      className="bg-[#6366f1] h-2.5 rounded-full transition-all duration-500 ease-out"
-                      style={{ width: `${progressPercentage}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="bg-white bg-white border border-gray-200 border-gray-200 rounded-2xl p-6 shadow-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900 text-gray-900">
-                      {activeTab === 'inbox' && 'All Tasks'}
-                      {activeTab === 'today' && 'Today\'s Tasks'}
-                      {activeTab === 'completed' && 'Completed Tasks'}
-                    </h2>
-                    <button className="flex items-center space-x-2 px-4 py-2 bg-[#6366f1] text-white rounded-lg hover:bg-[#4f46e5] transition-colors shadow-sm shadow-indigo-500/20">
-                      <Plus className="h-4 w-4" />
-                      <span>New Task</span>
-                    </button>
-                  </div>
-                  <TaskForm onTaskCreated={handleTaskCreated} />
-                </div>
-
-                <div className="bg-white bg-white border border-gray-200 border-gray-200 rounded-2xl p-6 shadow-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900 text-gray-900">
-                      Task List
-                    </h2>
-                    <div className="flex items-center space-x-2">
-                      <Filter className="h-4 w-4 text-gray-500 text-gray-500" />
-                      <span className="text-sm text-gray-600 text-gray-500">
-                        Filter by status
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-[calc(100vh-250px)] overflow-y-auto">
-                    <TaskList initialTasks={filteredTasks} onTasksUpdate={handleTasksUpdate} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </main>
-        </div>
-
-        {/* Mobile sidebar toggle */}
-        <div className="md:hidden fixed top-20 right-4 z-50">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition-colors"
-          >
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
-        </div>
-
-        {/* Mobile overlay */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden"
-            onClick={() => setSidebarOpen(false)}
-          ></div>
-        )}
-
-        {/* Bottom Navigation for Mobile */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white bg-white border-t border-gray-200 border-gray-200 z-40">
-          <div className="flex justify-around items-center h-16">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id as 'inbox' | 'today' | 'completed');
-                    setSidebarOpen(false); // Close sidebar when navigating
-                  }}
-                  className={`flex flex-col items-center justify-center px-4 py-2 rounded-lg transition-all ${
-                    activeTab === item.id
-                      ? 'text-[#6366f1] dark:text-[#818cf8]'
-                      : 'text-gray-600 text-gray-500'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="text-xs mt-1">{item.label}</span>
-                </button>
-              );
-            })}
-            <button
-              onClick={handleLogout}
-              className="flex flex-col items-center justify-center px-4 py-2 rounded-lg transition-all text-gray-600 text-gray-500"
-            >
-              <LogOut className="h-5 w-5" />
-              <span className="text-xs mt-1">Profile</span>
+            <button onClick={handleLogout} className="mt-auto flex items-center gap-3 px-4 py-3 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all font-medium">
+              <LogOut size={20} />
+              <span>Sign Out</span>
             </button>
           </div>
-        </div>
-      </div>
+        </aside>
 
-      {/* Floating Action Button for Mobile */}
-      <button
-        className="md:hidden fixed bottom-6 right-6 p-4 bg-[#6366f1] text-white rounded-full shadow-lg shadow-indigo-500/30 hover:bg-indigo-700 transition-all duration-200 z-30"
-        onClick={() => {
-          // Open add task modal or trigger the task form
-          console.log('Open add task modal');
-        }}
-      >
-        <Plus className="h-6 w-6" />
-      </button>
+        {/* --- MAIN CONTENT --- */}
+        <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          {/* Top Header */}
+          <header className="h-20 bg-white/80 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-6 md:px-10 sticky top-0 z-40">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 text-gray-600"><Menu /></button>
+            
+            <div className="hidden md:flex items-center bg-gray-100 px-4 py-2 rounded-2xl w-96 group focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
+              <Search size={18} className="text-gray-400" />
+              <input type="text" placeholder="Search your tasks..." className="bg-transparent border-none outline-none ml-3 text-sm w-full text-black placeholder:text-gray-500" />
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-bold text-black">{state.user?.name || 'User'}</p>
+              </div>
+              <div className="w-10 h-10 bg-gradient-to-tr from-indigo-500 to-violet-500 rounded-full border-2 border-white shadow-md" />
+            </div>
+          </header>
+
+          {/* Dashboard Area */}
+          <div className="flex-1 overflow-y-auto p-6 md:p-10">
+            <div className="max-w-5xl mx-auto">
+              
+              {/* Stats Card */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                <motion.div whileHover={{ y: -5 }} className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+                  <p className="text-sm font-bold text-gray-500 uppercase tracking-tight">Daily Progress</p>
+                  <div className="flex items-end justify-between mt-2">
+                    <h3 className="text-3xl font-black text-black">{progressPercentage}%</h3>
+                    <p className="text-xs font-bold text-indigo-600 mb-1">{completedTasks}/{totalTasks} Done</p>
+                  </div>
+                  <div className="w-full bg-gray-100 h-2 rounded-full mt-4 overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${progressPercentage}%` }} className="h-full bg-indigo-600" />
+                  </div>
+                </motion.div>
+                {/* Yahan aap mazeed cards add kar sakte hain (Weekly, streaks etc) */}
+              </div>
+
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Task Form Column */}
+                <div className="lg:w-1/3">
+                   <div className="sticky top-28">
+                     <h2 className="text-xl font-black text-black mb-4">Add Task</h2>
+                     <TaskForm onTaskCreated={handleTaskCreated} />
+                   </div>
+                </div>
+
+                {/* Task List Column */}
+                <div className="lg:w-2/3">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-black text-black tracking-tight capitalize">{activeTab}</h2>
+                    <button className="p-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 text-gray-600 transition-all">
+                      <Filter size={18} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {loading ? (
+                      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+                        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-gray-400 font-medium">Fetching your tasks...</p>
+                      </div>
+                    ) : (
+                      <TaskList initialTasks={filteredTasks} onTasksUpdate={handleTasksUpdate} />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
     </ProtectedRoute>
   );
 };
+
+// Helper Component for Sidebar Links
+const SidebarLink = ({ icon: Icon, label, active = false, onClick, count }: any) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl transition-all group ${
+      active ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' : 'text-gray-500 hover:bg-gray-50 hover:text-black'
+    }`}
+  >
+    <div className="flex items-center gap-3 font-bold text-sm">
+      <Icon size={20} className={active ? 'text-white' : 'text-gray-400 group-hover:text-indigo-500'} />
+      <span>{label}</span>
+    </div>
+    {count !== undefined && (
+      <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg ${active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+        {count}
+      </span>
+    )}
+  </button>
+);
+
+const CheckCircleIcon = (props: any) => (
+  <svg {...props} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+  </svg>
+);
 
 export default TasksPage;

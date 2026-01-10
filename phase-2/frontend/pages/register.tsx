@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/auth-context';
-import apiClient from '@/lib/api-client';
-import axios from 'axios';
-import { User, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import apiClient from '../lib/api-client';
+import { User, Mail, Lock, ArrowRight, Eye, EyeOff, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const RegisterPage = () => {
   const [email, setEmail] = useState('');
@@ -12,6 +12,8 @@ const RegisterPage = () => {
   const [full_name, setFullName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const router = useRouter();
   const { login } = useAuth();
@@ -21,7 +23,6 @@ const RegisterPage = () => {
     setIsSubmitting(true);
     setError(null);
 
-    // Basic validation
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       setIsSubmitting(false);
@@ -29,198 +30,200 @@ const RegisterPage = () => {
     }
 
     try {
-      // Direct API call to register endpoint
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/auth/register`,
-        {
-          email,
-          password,
-          full_name: full_name || email.split('@')[0]
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
-      );
+      const response = await apiClient.post('/auth/register', {
+        email,
+        password,
+        full_name: full_name || email.split('@')[0]
+      });
 
-      // Extract token from the response
       const { access_token } = response.data;
 
-      // Immediately store the token in localStorage
+      // Temporarily set the token in localStorage so the interceptor can pick it up
       localStorage.setItem('auth_token', access_token);
-
-      // Now fetch user data using the stored token
-      const userResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'}/auth/profile`,
-        {
-          headers: {
-            'Authorization': `Bearer ${access_token}`,
-            'Content-Type': 'application/json',
-          }
-        }
-      );
+      const userResponse = await apiClient.get('/auth/profile');
 
       const user = userResponse.data;
-
-      // Login to the auth context with complete user data
       login(access_token, {
         id: user.id,
         email: user.email,
         name: user.full_name || user.email.split('@')[0]
       });
 
-      // Redirect to tasks page after successful registration
       router.push('/tasks');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
       console.error('Registration error:', err);
+      if (err.response?.data?.detail) {
+        setError(err.response.data.detail);
+      } else if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else if (err.response?.status === 400) {
+        setError(err.response.data.detail || 'Invalid input provided.');
+      } else if (err.response?.status === 409) {
+        setError('Email already registered. Please use a different email.');
+      } else if (err.response?.status === 404) {
+        setError('Server not found. Please check if the backend is running.');
+      } else if (err.request) {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError('Registration failed. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden p-6 font-sans selection:bg-indigo-500/30">
+      
+      {/* --- BACKGROUND DECORATION (Home Theme Match) --- */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-fuchsia-600/10 rounded-full blur-[120px]" />
+      </div>
+
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-md z-10"
+      >
+        {/* --- HEADER --- */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mb-4">
-            <User className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Todo App</h1>
-          <h2 className="text-xl font-semibold text-gray-700">Create Account</h2>
-          <p className="text-gray-500 mt-2">Sign up to get started</p>
+          <motion.div 
+            whileHover={{ rotate: 180 }}
+            className="mx-auto w-14 h-14 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/20"
+          >
+            <CheckCircle2 className="h-7 w-7 text-white" strokeWidth={2.5} />
+          </motion.div>
+          <h1 className="text-3xl font-black text-white tracking-tighter">Create Account</h1>
+          <p className="text-gray-500 mt-2 font-medium flex items-center justify-center gap-2">
+            Start your productivity journey <Sparkles size={14} className="text-indigo-400" />
+          </p>
         </div>
 
-        <div className="bg-white border border-gray-200 rounded-lg p-8 shadow">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        {/* --- REGISTER CARD --- */}
+        <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-red-600 text-sm">
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-red-400 text-[10px] font-black uppercase tracking-widest text-center"
+              >
                 {error}
-              </div>
+              </motion.div>
             )}
 
             <div className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-gray-400" />
-                  </div>
+              {/* Full Name */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Full Name</label>
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-indigo-400 transition-colors" />
                   <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-3 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Enter your email"
+                    type="text"
+                    value={full_name}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3.5 bg-white/[0.03] border border-white/5 text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all placeholder:text-gray-600 font-medium"
+                    placeholder="John Doe"
                   />
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
+              {/* Email */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Email</label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-indigo-400 transition-colors" />
                   <input
-                    id="password"
-                    name="password"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3.5 bg-white/[0.03] border border-white/5 text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all placeholder:text-gray-600 font-medium"
+                    placeholder="name@focusflow.com"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Password</label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-indigo-400 transition-colors" />
+                  <input
                     type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 "
-                    placeholder="Create a password"
+                    className="w-full pl-12 pr-12 py-3.5 bg-white/[0.03] border border-white/5 text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all placeholder:text-gray-600 font-medium"
+                    placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
 
-              <div>
-                <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Confirm Password</label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-indigo-400 transition-colors" />
                   <input
-                    id="confirm-password"
-                    name="confirm-password"
                     type={showConfirmPassword ? "text" : "password"}
-                    autoComplete="new-password"
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 "
-                    placeholder="Confirm your password"
+                    className="w-full pl-12 pr-12 py-3.5 bg-white/[0.03] border border-white/5 text-white rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 focus:bg-white/[0.05] transition-all placeholder:text-gray-600 font-medium"
+                    placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
                   >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    ) : (
-                      <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                    )}
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`w-full py-3 px-4 rounded-lg font-medium ${
-                  isSubmitting
-                    ? 'bg-gray-400 cursor-not-allowed text-gray-200'
-                    : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                } focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
-              >
-                {isSubmitting ? 'Creating account...' : 'Create Account'}
-              </button>
-            </div>
+            {/* Submit Button */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-5 bg-white text-black rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl hover:bg-indigo-500 hover:text-white transition-all disabled:opacity-50 flex items-center justify-center gap-3 mt-4"
+            >
+              {isSubmitting ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <>
+                  <span>Create Account</span>
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </motion.button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{' '}
-              <a
-                href="/login"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
-              >
-                Sign in
+          {/* Footer Link */}
+          <div className="mt-10 text-center">
+            <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">
+              Already a member?{' '}
+              <a href="/login" className="text-indigo-400 hover:text-indigo-300 transition-colors ml-1">
+                Sign In
               </a>
             </p>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

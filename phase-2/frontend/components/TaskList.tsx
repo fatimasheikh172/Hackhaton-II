@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Task } from '../types/task';
 import TaskItem from './task/TaskItem';
 import { getTasks, deleteTask } from '../lib/api-client';
-import { CheckCircle2, Circle, FileText, Calendar, Clock, Filter, Check, X } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { FileText, Filter, Trash2, LayoutGrid } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TaskListProps {
   initialTasks?: Task[];
@@ -29,69 +29,27 @@ const TaskList: React.FC<TaskListProps> = ({ initialTasks, onTasksUpdate }) => {
           setLoading(false);
         }
       };
-
       fetchTasks();
     }
   }, [initialTasks, onTasksUpdate]);
 
-  // Update tasks when initialTasks changes
   useEffect(() => {
-    if (initialTasks) {
-      setTasks(initialTasks);
-    }
+    if (initialTasks) setTasks(initialTasks);
   }, [initialTasks]);
 
-  // Filter tasks based on status only
   const filteredTasks = tasks.filter(task => {
-    // Apply status filter
     if (statusFilter === 'pending') return task.status === 'pending';
     if (statusFilter === 'completed') return task.status === 'completed';
-    return true; // 'all' filter
+    return true;
   });
 
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        {/* Skeleton loaders */}
-        {[1, 2, 3].map((i) => (
-          <div
-            key={i}
-            className="bg-white/70 bg-white border border-slate-200/50 border-gray-200 rounded-xl p-4 shadow-sm animate-pulse"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="h-5 w-5 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"></div>
-              </div>
-              <div className="flex space-x-2">
-                <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-red-50/80 dark:bg-red-900/20 border border-red-200/50 dark:border-red-700/50 rounded-xl p-6 text-center">
-        <p className="text-red-600 dark:text-red-400">{error}</p>
-      </div>
-    );
-  }
-
   const deleteAllCompletedTasks = async () => {
-    if (!window.confirm('Are you sure you want to delete all completed tasks?')) return;
-
+    if (!window.confirm('Clear all completed tasks?')) return;
     try {
       const completedTasks = tasks.filter(task => task.status === 'completed');
       for (const task of completedTasks) {
         await deleteTask(task.id);
       }
-      // Update the tasks list by removing completed tasks
       const updatedTasks = tasks.filter(task => task.status !== 'completed');
       setTasks(updatedTasks);
       onTasksUpdate?.(updatedTasks);
@@ -100,87 +58,83 @@ const TaskList: React.FC<TaskListProps> = ({ initialTasks, onTasksUpdate }) => {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      {/* Filter Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-        <div className="flex flex-wrap gap-2">
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                statusFilter === 'all'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 text-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              All Tasks
-            </button>
-            <button
-              onClick={() => setStatusFilter('pending')}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                statusFilter === 'pending'
-                  ? 'bg-yellow-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 text-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              Pending
-            </button>
-            <button
-              onClick={() => setStatusFilter('completed')}
-              className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                statusFilter === 'completed'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 text-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
-              }`}
-            >
-              Completed
-            </button>
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-white/[0.02] border border-white/5 rounded-[1.5rem] p-6 animate-pulse">
+            <div className="flex items-center gap-4">
+              <div className="h-6 w-6 bg-white/5 rounded-lg"></div>
+              <div className="flex-1 space-y-3">
+                <div className="h-4 bg-white/10 rounded-full w-1/3"></div>
+                <div className="h-3 bg-white/5 rounded-full w-1/2"></div>
+              </div>
+            </div>
           </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* --- PREMIUM FILTER CONTROLS --- */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/[0.02] p-2 rounded-[2rem] border border-white/5">
+        <div className="flex p-1 bg-black/20 rounded-[1.5rem] gap-1">
+          {(['all', 'pending', 'completed'] as const).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setStatusFilter(filter)}
+              className={`px-6 py-2 text-[10px] font-black uppercase tracking-widest rounded-full transition-all ${
+                statusFilter === filter
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                  : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+              }`}
+            >
+              {filter}
+            </button>
+          ))}
         </div>
 
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600 text-gray-500">
-            {filteredTasks.length} of {tasks.length} tasks
+        <div className="flex items-center gap-4 px-4">
+          <span className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-500">
+            Showing <span className="text-indigo-400">{filteredTasks.length}</span> / {tasks.length}
           </span>
-          {statusFilter === 'completed' && tasks.some(task => task.status === 'completed') && (
+          
+          {statusFilter === 'completed' && tasks.some(t => t.status === 'completed') && (
             <button
               onClick={deleteAllCompletedTasks}
-              className="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
             >
-              Delete All
+              <Trash2 size={12} /> Clear Done
             </button>
           )}
         </div>
       </div>
 
+      {/* --- TASK LIST RENDER --- */}
       {filteredTasks.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="bg-white/70 bg-white border border-slate-200/50 border-gray-200 rounded-xl p-8 shadow-sm">
-            <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 text-gray-900 mb-2">
-              {statusFilter === 'completed' ? 'No completed tasks' :
-               statusFilter === 'pending' ? 'No pending tasks' : 'No tasks yet'}
-            </h3>
-            <p className="text-gray-600 text-gray-500">
-              {statusFilter === 'completed' ? 'Complete some tasks to see them here' :
-               statusFilter === 'pending' ? 'All tasks are completed! Great job!' : 'Get started by creating your first task!'}
-            </p>
+        <motion.div 
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+          className="text-center py-20 bg-white/[0.01] border border-dashed border-white/10 rounded-[3rem]"
+        >
+          <div className="w-16 h-16 bg-white/5 rounded-3xl flex items-center justify-center mx-auto mb-4 border border-white/5">
+            <LayoutGrid className="text-gray-600" size={32} />
           </div>
-        </div>
+          <h3 className="text-xl font-bold text-white mb-1">
+            {statusFilter === 'completed' ? 'Nothing finished yet' : 'Your list is empty'}
+          </h3>
+          <p className="text-sm text-gray-500 max-w-[250px] mx-auto">
+            {statusFilter === 'all' ? 'Time to add some goals and crush them!' : 'Keep going, you’re doing great!'}
+          </p>
+        </motion.div>
       ) : (
-        <ul className="space-y-3">
-          {filteredTasks.map((task, index) => (
-            <motion.div
-              key={task.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: index * 0.05 }}
-              className="bg-white/80 bg-white border border-slate-200/50 border-gray-200 rounded-xl p-4 shadow-sm transition-all hover:shadow-lg hover:scale-[1.02] hover:-translate-y-0.5 hover:border-[#6366f1]/50"
-            >
-              <TaskItem task={task} onUpdate={setTasks} />
-            </motion.div>
-          ))}
+        <ul className="grid grid-cols-1 gap-4">
+          <AnimatePresence mode="popLayout">
+            {filteredTasks.map((task, index) => (
+              <TaskItem key={task.id} task={task} onUpdate={setTasks} />
+            ))}
+          </AnimatePresence>
         </ul>
       )}
     </div>
@@ -188,5 +142,3 @@ const TaskList: React.FC<TaskListProps> = ({ initialTasks, onTasksUpdate }) => {
 };
 
 export default TaskList;
-
-
