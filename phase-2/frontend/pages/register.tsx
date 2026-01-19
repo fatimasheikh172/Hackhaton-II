@@ -23,8 +23,33 @@ const RegisterPage = () => {
     setIsSubmitting(true);
     setError(null);
 
+    // Basic validation
+    if (!full_name.trim()) {
+      setError('Please enter your full name.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!email.trim()) {
+      setError('Please enter your email address.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Please enter a password.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      setIsSubmitting(false);
+      return;
+    }
+
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      setError('Passwords do not match. Please try again.');
       setIsSubmitting(false);
       return;
     }
@@ -52,18 +77,22 @@ const RegisterPage = () => {
       router.push('/tasks');
     } catch (err: any) {
       console.error('Registration error:', err);
-      if (err.response?.data?.detail) {
+      if (err.code === 'ERR_NETWORK') {
+        setError('Cannot connect to the server. Please make sure the backend server is running on http://localhost:8000');
+      } else if (err.response?.data?.detail) {
         setError(err.response.data.detail);
       } else if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else if (err.response?.status === 400) {
-        setError(err.response.data.detail || 'Invalid input provided.');
+        setError(err.response.data.detail || 'Invalid input provided. Please check your information.');
       } else if (err.response?.status === 409) {
-        setError('Email already registered. Please use a different email.');
+        setError('Email already registered. Please use a different email or try logging in.');
       } else if (err.response?.status === 404) {
-        setError('Server not found. Please check if the backend is running.');
+        setError('Server not found. Please check if the backend is running on http://localhost:8000');
+      } else if (err.response?.status === 500) {
+        setError('Server error. Please try again later or contact support if the problem persists.');
       } else if (err.request) {
-        setError('Network error. Please check your connection and try again.');
+        setError('Network error. Please check your internet connection and make sure the backend server is running.');
       } else {
         setError('Registration failed. Please try again.');
       }
@@ -74,14 +103,14 @@ const RegisterPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden p-6 font-sans selection:bg-indigo-500/30">
-      
+
       {/* --- BACKGROUND DECORATION (Home Theme Match) --- */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-fuchsia-600/10 rounded-full blur-[120px]" />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
@@ -89,7 +118,7 @@ const RegisterPage = () => {
       >
         {/* --- HEADER --- */}
         <div className="text-center mb-8">
-          <motion.div 
+          <motion.div
             whileHover={{ rotate: 180 }}
             className="mx-auto w-14 h-14 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/20"
           >
@@ -104,9 +133,9 @@ const RegisterPage = () => {
         {/* --- REGISTER CARD --- */}
         <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-5">
-            
+
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-red-400 text-[10px] font-black uppercase tracking-widest text-center"

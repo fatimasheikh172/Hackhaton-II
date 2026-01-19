@@ -20,6 +20,19 @@ const LoginPage = () => {
     setIsSubmitting(true);
     setError(null);
 
+    // Basic validation
+    if (!email.trim()) {
+      setError('Please enter your email address.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Please enter your password.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const response = await apiClient.post('/auth/login', { email, password });
 
@@ -39,16 +52,20 @@ const LoginPage = () => {
       router.push('/tasks');
     } catch (err: any) {
       console.error('Login error:', err);
-      if (err.response?.data?.detail) {
+      if (err.code === 'ERR_NETWORK') {
+        setError('Cannot connect to the server. Please make sure the backend server is running on http://localhost:8000');
+      } else if (err.response?.data?.detail) {
         setError(err.response.data.detail);
       } else if (err.response?.data?.message) {
         setError(err.response.data.message);
       } else if (err.response?.status === 401) {
-        setError('Invalid email or password.');
+        setError('Invalid email or password. Please try again.');
       } else if (err.response?.status === 404) {
-        setError('Server not found. Please check if the backend is running.');
+        setError('Server not found. Please check if the backend is running on http://localhost:8000');
+      } else if (err.response?.status === 500) {
+        setError('Server error. Please try again later or contact support if the problem persists.');
       } else if (err.request) {
-        setError('Network error. Please check your connection and try again.');
+        setError('Network error. Please check your internet connection and make sure the backend server is running.');
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
@@ -59,14 +76,14 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#050505] relative overflow-hidden p-6 font-sans selection:bg-indigo-500/30">
-      
+
       {/* --- BACKGROUND DECORATION (Home Theme Match) --- */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-fuchsia-600/10 rounded-full blur-[120px]" />
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
@@ -74,7 +91,7 @@ const LoginPage = () => {
       >
         {/* --- LOGO / HEADER --- */}
         <div className="text-center mb-8">
-          <motion.div 
+          <motion.div
             whileHover={{ scale: 1.05 }}
             className="mx-auto w-14 h-14 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mb-6 shadow-2xl shadow-indigo-500/20"
           >
@@ -87,9 +104,9 @@ const LoginPage = () => {
         {/* --- LOGIN CARD (Glassmorphism) --- */}
         <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-6">
-            
+
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 text-red-400 text-xs flex items-center gap-3 font-bold uppercase tracking-wider"
@@ -177,12 +194,12 @@ const LoginPage = () => {
                 href="/register"
                 className="text-indigo-400 hover:text-indigo-300 transition-colors ml-1"
               >
-                Sign up 
+                Sign up
               </a>
             </p>
           </div>
         </div>
-        
+
         {/* Subtle Brand Info */}
         <div className="mt-12 flex justify-center items-center gap-2 text-gray-600">
            <Sparkles size={12} />

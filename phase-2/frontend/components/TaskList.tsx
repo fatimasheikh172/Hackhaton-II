@@ -132,7 +132,11 @@ const TaskList: React.FC<TaskListProps> = ({ initialTasks, onTasksUpdate }) => {
         <ul className="grid grid-cols-1 gap-4">
           <AnimatePresence mode="popLayout">
             {filteredTasks.map((task, index) => (
-              <TaskItem key={task.id} task={task} onUpdate={setTasks} />
+              <TaskItem key={task.id} task={task} onUpdate={(updateFn) => {
+            const updatedTasks = updateFn(tasks);
+            setTasks(updatedTasks);
+            onTasksUpdate?.(updatedTasks);
+          }} />
             ))}
           </AnimatePresence>
         </ul>

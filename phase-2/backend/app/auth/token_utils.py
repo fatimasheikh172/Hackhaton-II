@@ -31,7 +31,7 @@ def verify_token(token: str):
                 detail="Could not validate credentials"
             )
         return user_id
-    except jwt.JWTError as e:
+    except jwt.PyJWTError as e:
         print(f"JWT Error: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
