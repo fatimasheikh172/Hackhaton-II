@@ -2,7 +2,8 @@ import axios, { AxiosRequestConfig } from 'axios';
 import { Task, TaskListResponse, CreateTaskRequest, UpdateTaskRequest } from '../types/task';
 
 // Base API URL - in production, this would come from environment variables
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// Using the proxy API route to add middleware layer between frontend and backend
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/proxy/api/v1';
 
 // Create axios instance with default config
 const apiClient = axios.create({
