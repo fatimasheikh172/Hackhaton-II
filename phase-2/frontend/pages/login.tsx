@@ -53,7 +53,7 @@ const LoginPage = () => {
     } catch (err: any) {
       console.error('Login error:', err);
       if (err.code === 'ERR_NETWORK') {
-        setError('Cannot connect to the server. Please make sure the backend server is running on http://localhost:8000');
+        setError('Cannot connect to the server. Please make sure the backend server is running at https://fatimaasad-todo.hf.space');
       } else if (err.response?.data?.detail) {
         setError(err.response.data.detail);
       } else if (err.response?.data?.message) {
@@ -61,7 +61,7 @@ const LoginPage = () => {
       } else if (err.response?.status === 401) {
         setError('Invalid email or password. Please try again.');
       } else if (err.response?.status === 404) {
-        setError('Server not found. Please check if the backend is running on http://localhost:8000');
+        setError('Server not found. Please check if the backend is running at https://fatimaasad-todo.hf.space');
       } else if (err.response?.status === 500) {
         setError('Server error. Please try again later or contact support if the problem persists.');
       } else if (err.request) {

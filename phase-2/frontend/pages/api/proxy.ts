@@ -7,7 +7,7 @@ const proxy = httpProxy.createProxyServer();
 export default function handler(req: NextApiRequest, res: NextApiResponse) {
   return new Promise<void>((resolve, reject) => {
     // Get the target backend URL from environment variables
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const backendUrl = process.env.BACKEND_URL || 'https://fatimaasad-todo.hf.space';
 
     // Handle CORS preflight requests
     if (req.method === 'OPTIONS') {
