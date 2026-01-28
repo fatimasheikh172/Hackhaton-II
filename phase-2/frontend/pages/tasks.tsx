@@ -50,7 +50,7 @@ const TasksPage = () => {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-[#F9FAFB] flex flex-col md:flex-row font-sans text-black">
+      <div className="min-h-screen bg-[#faf8f8] flex flex-col md:flex-row text-white selection:bg-indigo-500/30 overflow-x-hidden font-sans">
         <Head>
           <title>Command Center | Productivity App</title>
         </Head>

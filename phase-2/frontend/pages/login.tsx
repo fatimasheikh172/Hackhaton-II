@@ -38,7 +38,7 @@ const LoginPage = () => {
 
       const { access_token } = response.data;
 
-      // Store the token in localStorage temporarily so the next API call can use it
+      // Temporarily store the token so the API client can use it for the profile call
       localStorage.setItem('auth_token', access_token);
 
       const userResponse = await apiClient.get('/auth/profile');

@@ -40,11 +40,11 @@ The tasks table stores all task information with a foreign key relationship to t
 ```sql
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    title VARCHAR(255) NOT NULL,
+    title VARCHAR(200) NOT NULL,
     description TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in-progress', 'completed')),
     priority VARCHAR(10) NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high')),
-    due_date TIMESTAMP WITH TIME ZONE,
+    due_date TIMESTAMP WITH TIME ZONE,  -- nullable timestamp for due dates
     user_id UUID NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -53,9 +53,10 @@ CREATE TABLE tasks (
 ```
 
 **Notes**:
-- The `title` field is required and has a maximum length of 255 characters
+- The `title` field is required and has a maximum length of 200 characters (1-200 range)
 - The `status` field has a check constraint to ensure valid values
 - The `priority` field has a check constraint to ensure valid values
+- The `due_date` field is a nullable timestamp for optional due dates
 - The `user_id` field creates a foreign key relationship to the users table
 - The `ON DELETE CASCADE` ensures tasks are deleted when a user is deleted
 - The `created_at` and `updated_at` fields track timestamps for audit purposes
@@ -67,11 +68,13 @@ CREATE TABLE tasks (
 - `idx_users_username`: Index on username field for efficient lookups
 
 ### Tasks Table Indexes
-- `idx_tasks_user_id`: Index on user_id field for efficient user task queries
+- `idx_tasks_user_id`: Index on user_id field for efficient user task queries (multi-user isolation)
 - `idx_tasks_status`: Index on status field for efficient filtering
+- `idx_tasks_completed`: Index on status field for efficient completed task queries
 - `idx_tasks_priority`: Index on priority field for efficient sorting
 - `idx_tasks_due_date`: Index on due_date field for efficient date-based queries
 - `idx_tasks_created_at`: Index on created_at field for efficient chronological queries
+- `idx_tasks_title`: Index on title field for efficient title-based searches
 
 ## Relationships
 
@@ -79,6 +82,7 @@ CREATE TABLE tasks (
 - One user can have many tasks
 - Foreign key: `tasks.user_id` references `users.id`
 - Cascade delete: When a user is deleted, all their tasks are also deleted
+- Multi-user isolation: The `user_id` foreign key enforces that users can only access their own tasks
 
 ## SQLModel Definitions
 
@@ -113,13 +117,13 @@ from datetime import datetime
 import uuid
 
 class TaskBase(SQLModel):
-    title: str = Field(max_length=255, nullable=False)
+    title: str = Field(min_length=1, max_length=200, nullable=False)  # 1-200 char range
     description: Optional[str] = Field(default=None)
     status: str = Field(default="pending", max_length=20,
                        sa_column_kwargs={"check": "status IN ('pending', 'in-progress', 'completed')"})
     priority: str = Field(default="medium", max_length=10,
                          sa_column_kwargs={"check": "priority IN ('low', 'medium', 'high')"})
-    due_date: Optional[datetime] = Field(default=None)
+    due_date: Optional[datetime] = Field(default=None)  # nullable timestamp
     user_id: uuid.UUID = Field(foreign_key="users.id")
 
 class Task(TaskBase, table=True):
@@ -139,15 +143,24 @@ class Task(TaskBase, table=True):
 ## Constraints and Validation
 - All required fields must be present when creating records
 - Email uniqueness is enforced at the database level
+- Title length is constrained to 1-200 characters
 - Status and priority fields have check constraints to ensure valid values
 - Foreign key constraints ensure referential integrity
 - Cascade delete maintains data consistency
+- Multi-user isolation is enforced through user_id foreign key relationships
 
 ## Migration Strategy
 - Use Alembic for database migrations
 - Create migration scripts for schema changes
 - Test migrations in development before applying to production
 - Implement proper rollback strategies for each migration
+- Handle initial database setup with SQLModel's metadata.create_all() during application startup
+
+## Connection Configuration
+- Database connection established via DATABASE_URL environment variable
+- Support both PostgreSQL (production) and SQLite (development) based on DATABASE_URL
+- Connection pooling configured appropriately for the target environment
+- SSL mode configured based on environment (required for production)
 
 For API integration details, see @specs/api/rest-endpoints.md.
 For feature specifications, see @specs/features/task-crud.md.

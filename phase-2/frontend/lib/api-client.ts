@@ -1,9 +1,8 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { Task, TaskListResponse, CreateTaskRequest, UpdateTaskRequest } from '../types/task';
 
-// Base API URL - in production, this would come from environment variables
-// Using the proxy API route to add middleware layer between frontend and backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api/proxy/api/v1';
+// Base API URL - Connect directly to the backend
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -33,10 +32,16 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Only handle 401 errors for non-auth endpoints (avoid interfering with login/register flow)
+    const isAuthEndpoint = error.config?.url?.includes('/auth/');
+
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       // Handle unauthorized access - redirect to login, clear tokens, etc.
       localStorage.removeItem('auth_token');
-      window.location.href = '/login';
+      // Only redirect if we're not on auth pages
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

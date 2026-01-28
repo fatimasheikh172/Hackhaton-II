@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "better-auth": "^1.4.10",
-    "http-proxy": "^1.18.1"
-  }
-}

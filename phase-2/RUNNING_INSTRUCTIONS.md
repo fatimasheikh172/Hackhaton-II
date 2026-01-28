@@ -32,7 +32,7 @@ DATABASE_URL=sqlite:///./todo_app.db
 uvicorn main:app --reload --port 8000
 ```
 
-The backend server will be available at `http://localhost:8000`.
+The backend server will be available at `http://localhost:8000` .
 
 ## Setting up the Frontend
 

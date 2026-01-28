@@ -20,9 +20,9 @@ interface AuthAction {
 
 interface AuthContextType {
   state: AuthState;
-  login: (token: string, user: User) => void;
+  login: (token: string, user: User) => Promise<void>;
   logout: () => void;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (token: string, user: User) => Promise<void>;
 }
 
 const initialState: AuthState = {
@@ -74,13 +74,27 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  const login = async (token: string, user: User) => {
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+  const login = (token: string, user: User): Promise<void> => {
+    return new Promise((resolve) => {
+      // Update auth context state first
+      dispatch({
+        type: 'LOGIN_SUCCESS',
+        payload: { token, user },
+      });
 
-    dispatch({
-      type: 'LOGIN_SUCCESS',
-      payload: { token, user },
+      // Use setTimeout to ensure state update happens before continuing
+      setTimeout(() => {
+        try {
+          localStorage.setItem('auth_token', token);
+          localStorage.setItem('user', JSON.stringify(user));
+          resolve();
+        } catch (error) {
+          console.error('Error saving auth data to localStorage:', error);
+          // If localStorage fails, logout to prevent inconsistent state
+          logout();
+          resolve();
+        }
+      }, 0);
     });
   };
 
@@ -93,10 +107,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   };
 
-  const signup = async (email: string, password: string) => {
-    // In a real app, this would make an API call to register a user
-    // For now, we'll just simulate the process
-    console.log('Signing up with:', email, password);
+  const signup = (token: string, user: User): Promise<void> => {
+    return new Promise((resolve) => {
+      // Update auth context state first
+      dispatch({
+        type: 'LOGIN_SUCCESS',
+        payload: { token, user },
+      });
+
+      // Use setTimeout to ensure state update happens before continuing
+      setTimeout(() => {
+        try {
+          localStorage.setItem('auth_token', token);
+          localStorage.setItem('user', JSON.stringify(user));
+          resolve();
+        } catch (error) {
+          console.error('Error saving auth data to localStorage:', error);
+          // If localStorage fails, logout to prevent inconsistent state
+          logout();
+          resolve();
+        }
+      }, 0);
+    });
   };
 
   // Restore session on initial load

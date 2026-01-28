@@ -1,23 +1,31 @@
 <!--
 Sync Impact Report:
-Version change: N/A -> 1.0.0
+Version change: 1.0.0 -> 1.1.0
 Modified principles: N/A
-Added sections: Project Constitution for hackathon-todo
+Added sections: Project Evolution, Feature Checklist, High-Level Architecture
 Removed sections: N/A
-Templates requiring updates: N/A
+Templates requiring updates: ✅ .specify/templates/plan-template.md, ✅ .specify/templates/spec-template.md, ✅ .specify/templates/tasks-template.md
 Follow-up TODOs: None
 -->
 
 # Project Constitution
 
-## Version: 1.0.0
+## Version: 1.1.0
 **Ratification Date:** 2026-01-03
-**Last Amended:** 2026-01-03
+**Last Amended:** 2026-01-26
 
 ## Project Identity
 **Project Name:** hackathon-todo
-**Project Type:** Full-stack Todo Web Application
+**Project Type:** Multi-user Todo Application evolving to AI Chatbot
 **Repository Structure:** Monorepo
+**Current Phase:** Phase II - Full-Stack Web Application
+**Evolution Path:** From task management system to AI-powered productivity assistant
+
+## Project Evolution
+The hackathon-todo application is designed as an evolutionary project with multiple phases:
+- **Phase I:** Basic todo functionality
+- **Phase II:** Full-Stack Web App with authentication (Current)
+- **Phase III:** AI Chatbot integration for enhanced task management
 
 ## Core Principles
 
@@ -72,6 +80,20 @@ Follow-up TODOs: None
 - Code reviews are mandatory for all pull requests
 - Automated formatting and linting enforced
 - Deployments are automated and reversible
+
+## Feature Checklist
+- **[X] Task CRUD:** Create, Read, Update, Delete operations for user tasks
+- **[X] Authentication:** User registration, login, and session management
+- **[ ] Chatbot (Phase III):** AI-powered task management assistance
+- **[X] Responsive UI:** Mobile-friendly interface
+- **[X] Data Persistence:** Database storage for tasks and user data
+
+## High-Level Architecture
+- **Frontend-Backend Separation:** Clear API boundary between Next.js frontend and FastAPI backend
+- **JWT Auth Flow:** Secure token-based authentication using Better Auth
+- **Neon DB Integration:** PostgreSQL database hosted on Neon for production
+- **Monorepo Structure:** Unified repository with separate frontend and backend services
+- **RESTful API:** Standard HTTP methods and status codes for API communication
 
 ## Technical Standards
 
