@@ -63,22 +63,25 @@ const RegisterPage = () => {
 
       const { access_token } = response.data;
 
-      // Temporarily set the token in localStorage so the interceptor can pick it up
+      // Store the token in localStorage temporarily so the next API call can use it
       localStorage.setItem('auth_token', access_token);
+
       const userResponse = await apiClient.get('/auth/profile');
 
       const user = userResponse.data;
-      login(access_token, {
+      // Call login and wait for the state update to complete
+      await login(access_token, {
         id: user.id,
         email: user.email,
         name: user.full_name || user.email.split('@')[0]
       });
 
+      // Redirect to tasks page after successful registration
       router.push('/tasks');
     } catch (err: any) {
       console.error('Registration error:', err);
       if (err.code === 'ERR_NETWORK') {
-        setError('Cannot connect to the server. Please make sure the backend server is running at https://fatimaasad-todo.hf.space');
+        setError('Cannot connect to the server. Please make sure the backend server is running');
       } else if (err.response?.data?.detail) {
         setError(err.response.data.detail);
       } else if (err.response?.data?.message) {
@@ -88,11 +91,11 @@ const RegisterPage = () => {
       } else if (err.response?.status === 409) {
         setError('Email already registered. Please use a different email or try logging in.');
       } else if (err.response?.status === 404) {
-        setError('Server not found. Please check if the backend is running at https://fatimaasad-todo.hf.space');
+        setError('Server not found. Please check if the backend is running');
       } else if (err.response?.status === 500) {
         setError('Server error. Please try again later or contact support if the problem persists.');
       } else if (err.request) {
-        setError('Network error. Please check your internet connection and make sure the backend server is running.');
+        setError('Please make sure the backend server is running.');
       } else {
         setError('Registration failed. Please try again.');
       }
@@ -258,3 +261,4 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
+
